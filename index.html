@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        #canvas{
+            border: 1px solid #000;
+        }
+    </style>
+    <script src="sky.js"></script>
+    <script src="land.js"></script>
+    <script src="pipe.js"></script>
+    <script src="bird.js"></script>
+</head>
+<body>
+    <canvas width="800" height="600" id="canvas"></canvas>
+</body>
+<script>
+    //获取画布
+    var canvas = document.querySelector('#canvas');
+    var context = canvas.getContext('2d');
+
+    //获取游戏需要的图片
+    var skyImg = new Image();
+    var landImg = new Image();
+    var pipe1Img = new Image();
+    var pipe2Img = new Image();
+    var birdImg = new Image();
+
+    //设置图片的路径
+    skyImg.src = './img/sky.png';
+    landImg.src = './img/land.png';
+    pipe1Img.src = './img/pipe1.png';
+    pipe2Img.src = './img/pipe2.png';
+    birdImg.src = './img/birds.png';
+
+    //声明一个数组用于存放以上的所有图片
+    var image = [skyImg, landImg, pipe1Img, pipe2Img, birdImg];
+    //声明一个用于计数加载完成图片的数量
+    var count = 0;
+    //声明一个数组用于存放创建出来的所有对象
+    var roleArr = [];
+    var bird;
+
+    //声明开始时间
+    var latestTime;
+    var word;
+
+
+    //加载图片
+    image.forEach(function(img){
+        img.onload = function(){
+            count ++;
+            if(count == 5){
+                //console.log('success');       //判断是否加载成功
+                //加载完成 创建对象
+                function creatRole(){
+
+                    //创建天空对象
+                    for(var i = 0; i < 2; i++){
+                        var sky = new Sky({
+                            image: skyImg,
+                            x: skyImg.width * i,
+                            canvas: canvas,
+                            context: context
+                        });
+                        roleArr.push(sky);
+                    }
+
+                    //创建地面对象
+                    for(var i = 0; i < 5; i++){
+                        var land = new Land({
+                            image: landImg,
+                            x: landImg.width * i,
+                            canvas: canvas,
+                            context: context
+                        });
+                        roleArr.push(land);
+                    }
+
+                    //创建管对象
+                    var gap = (canvas.width - pipe1Img.width * 6) / 5;
+                    for(var i = 0; i < 6; i++){
+                        var pipe = new Pipe({
+                            topImage: pipe2Img,
+                            bottomImage: pipe1Img,
+                            x: 300 + (pipe1Img.width + gap) * i,
+                            canvas: canvas,
+                            context: context,
+                            gap: gap,
+                            bottomOffset:landImg.height
+                        });
+                        roleArr.push(pipe);
+                    }
+
+
+                    //创建小鸟对象
+                    bird = new Bird({
+                        image: birdImg,
+                        canvas: canvas,
+                        context: context,
+                        w: birdImg.width / 3,
+                        h: birdImg.height,
+                        x:100,
+                        y:100
+                    });
+                    roleArr.push(bird);
+
+
+                }
+
+                //游戏结束
+                function gameOver(){
+
+                    context.beginPath();
+                    context.rect(280,250,200,60);
+                    context.fillStyle = '#fff';
+                    context.fill();
+                    context.beginPath();
+                    context.textAlign = 'left';
+                    context.textBaseline = 'bottom';
+                    context.fillStyle = '#000';
+                    context.font = '30px Microsoft Yahei';
+                    context.fillText('Game Over',300,300);
+
+                    context.beginPath();
+                    context.textAlign = 'right';
+                    context.textBaseline = 'top';
+                    context.fillStyle = '#000';
+                    context.font = '20px Microsoft Yahei';
+                    context.fillText(word, canvas.width, 0);
+
+                }
+
+
+                //遍历数组中的对象，调用各个对象中的draw方法
+                function action(){
+                    //清除画布上面的内容
+                    context.clearRect(0,0,canvas.width,canvas.height);
+                    context.beginPath();
+
+                    roleArr.forEach(function(role){
+                        role.draw();
+                    });
+
+
+
+                    //判断鸟是否撞上
+                    if(bird.y >= canvas.height - landImg.height -15){
+                        gameOver();
+                        return;
+                    }
+
+
+                    //判断是否撞到柱子
+                    if (context.isPointInPath(bird.x, bird.y)) {
+                        gameOver();
+                        return;
+                    }
+
+                    //计时的功能
+                    latestTime = new Date();
+                    var keepTime = latestTime - firstTime;
+                    //console.log(keepTime);
+                    var sec = Math.floor(keepTime / 1000);
+                    var hour = Math.floor(sec / 3600);
+                    var min = Math.floor((sec - 3600 * hour) / 60);
+                    sec = sec % 60;
+
+                    word = '你已经坚持了'+ hour + '小时' + min + '分钟' + sec + '秒！'
+                    context.beginPath();
+                    context.textAlign = 'right';
+                    context.textBaseline = 'top';
+                    context.fillStyle = '#000';
+                    context.font = '20px Microsoft Yahei';
+                    context.fillText(word, canvas.width, 0);
+
+
+
+
+                    window.requestAnimationFrame(action);
+
+
+
+
+                }
+
+                canvas.onclick = function(){
+                    bird.v = -0.2;
+                }
+
+                var firstTime = new Date();
+                creatRole();
+                action();
+
+
+
+
+
+            }
+        }
+    })
+
+
+</script>
+</html>
